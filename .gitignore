@@ -1,0 +1,13 @@
+# node / next
+node_modules/
+.next/
+npm-debug.log
+
+# env
+.env
+.env.local
+
+# terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
