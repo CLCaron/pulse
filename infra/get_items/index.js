@@ -15,7 +15,6 @@ function toJs(item) {
 }
 
 exports.handler = async (event) => {
-    //TODO A lot of this will need to change when I use GSI
     try {
         const qs = event?.queryStringParameters || {};
         const limit = Math.min(Number(qs.limit || DEFAULT_LIMIT), 50);
