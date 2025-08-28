@@ -1,4 +1,4 @@
-const { DynamoDBClient, ScanCommand } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBClient, ScanCommand, QueryCommand } = require("@aws-sdk/client-dynamodb");
 
 const ddb = new DynamoDBClient({});
 const TABLE_NAME = process.env.TABLE_NAME;
@@ -15,28 +15,34 @@ function toJs(item) {
 }
 
 exports.handler = async (event) => {
-    //TODO A lot of this will need to change when I use GSI
     try {
         const qs = event?.queryStringParameters || {};
         const limit = Math.min(Number(qs.limit || DEFAULT_LIMIT), 50);
         const source = qs.source || null;
 
-        const data = await ddb.send(new ScanCommand({ TableName: TABLE_NAME }));
+        let items = [];
 
-        let items = (data.Items || []).map(toJs);
-
-        if (source) items = items.filter((x) => x.source === source);
-        items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        items = items.slice(0, limit);
+        if (source) {
+            const data = await ddb.send(new QueryCommand({
+                TableName: TABLE_NAME,
+                IndexName: "gsi_source_ts",
+                KeyConditionExpression: "#src = :s",
+                ExpressionAttributeNames: { "#src": "source" },
+                ExpressionAttributeValues: { ":s": { S: source } },
+                ScanIndexForward: false,
+                Limit: limit
+            }));
+            items = (data.items || []).map(toJs);
+        } else {
+            const data = await ddb.send(new ScanCommand({ TableName: TABLE_NAME }));
+            items = (data.Items || []).map(toJs)
+                .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+                .slice(0, limit);
+        }
 
         return {
             statusCode: 200,
-            headers: {
-                "content-type": "application/json",
-                "access-control-allow-origin": "*",
-                "access-control-allow-headers": "content-type",
-                "access-control-allow-methods": "GET,OPTIONS"
-            },
+            headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
             body: JSON.stringify(items),
         };
     } catch (err) {
@@ -45,9 +51,7 @@ exports.handler = async (event) => {
             statusCode: 500,
             headers: {
                 "content-type": "application/json",
-                "access-control-allow-origin": "*",
-                "access-control-allow-headers": "content-type",
-                "access-control-allow-methods": "GET,OPTIONS"
+                "access-control-allow-origin": "*"
             },
             body: JSON.stringify({ error: "server_error" }),
         };
