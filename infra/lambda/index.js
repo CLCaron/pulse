@@ -144,6 +144,7 @@ async function saveIfNew(item) {
       title: { S: item.title },
       source: { S: item.source },
       ts: { N: String(item.ts) },
+      ttl: { N: String(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30) },
       ...(item.url ? { url: { S: item.url } } : {})
     },
     ConditionExpression: "attribute_not_exists(id)"

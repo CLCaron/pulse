@@ -94,6 +94,23 @@ resource "aws_dynamodb_table" "items" {
     type = "S"
   }
 
+  attribute {
+    name = "source"
+    type = "S"
+  }
+
+  attribute {
+    name = "ts"
+    type = "N"
+  }
+
+  global_secondary_index {
+    name            = "gsi_source_ts"
+    hash_key        = "source"
+    range_key       = "ts"
+    projection_type = "ALL"
+  }
+
   ttl {
     attribute_name = "ttl"
     enabled        = true
@@ -126,10 +143,13 @@ data "aws_iam_policy_document" "lambda_items_read" {
     effect = "Allow"
     actions = [
       "dynamodb:Scan",
-      "dynamodb:DescribeTable"
-      #TODO Add query later when I create GSI
+      "dynamodb:DescribeTable",
+      "dynamodb:Query"
     ]
-    resources = [aws_dynamodb_table.items.arn]
+    resources = [
+      aws_dynamodb_table.items.arn,
+      "${aws_dynamodb_table.items.arn}/index/gsi_source_ts"
+    ]
   }
 }
 
