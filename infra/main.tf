@@ -53,7 +53,7 @@ resource "aws_lambda_function" "heartbeat" {
   runtime          = "nodejs20.x"
   filename         = data.archive_file.heartbeat_zip.output_path
   source_code_hash = data.archive_file.heartbeat_zip.output_base64sha256
-  timeout          = 15
+  timeout          = 20
   environment { variables = { APP_NAME = "Pulse"
     TABLE_NAME = aws_dynamodb_table.items.name
   } }
@@ -156,7 +156,7 @@ resource "aws_lambda_function" "get_items" {
   runtime          = "nodejs20.x"
   filename         = data.archive_file.get_items_zip.output_path
   source_code_hash = data.archive_file.get_items_zip.output_base64sha256
-  timeout          = 10
+  timeout          = 20
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.items.name
